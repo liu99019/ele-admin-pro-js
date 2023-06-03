@@ -4,7 +4,7 @@
        <!-- <el-col :span="8"> -->
         <!-- 搜索与添加区域 -->
         <div style="margin-bottom: 10px;margin-top: 10px;">
-          <el-input placeholder="请输入原材料名称" style="width: 300px;margin-left: 10px;"
+          <el-input placeholder="请输入原材料名称或编号" style="width: 300px;margin-left: 10px;"
            v-model="searchInput" clearable @clear="getAllMaterials" >
           <template #append>
            <el-button @click="searchMaterial"><el-icon><search /></el-icon></el-button>
@@ -16,35 +16,53 @@
       </el-button>
         </div>
       <el-table :data="materials"  style="width: 100%;">
-        <el-table-column prop="materialCode" label="编码"></el-table-column>
+        <el-table-column prop="materialCode" label="材料编码"></el-table-column>
         <el-table-column prop="materialName" label="名称"></el-table-column>
         <el-table-column prop="specification" label="规格"></el-table-column>
-        <el-table-column prop="unit" label="单位"></el-table-column>
-        <el-table-column prop="unitPrice" label="单价"></el-table-column>
+        <el-table-column prop="unit" label="单位">
+          <template #default="scope">
+            <el-tag v-if="scope.row.unit =='千克'" class="ml-2" >{{ scope.row.unit }}</el-tag>
+            <el-tag v-if="scope.row.unit =='吨'" class="ml-2" type="info">{{ scope.row.unit }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="unitPrice" label="单价(元)"></el-table-column>
         <el-table-column label="操作">
           <template #default="scope">
-            <el-button size="small" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(scope.row.id)">删除</el-button>
+            <el-button size="small" type="primary" @click="handleEdit(scope.row)">
+              编辑
+            <el-icon class="el-icon--right"><Edit/></el-icon>
+            </el-button>
+            <el-button size="small" type="danger" @click="handleDelete(scope.row.id)">
+              删除
+            <el-icon class="el-icon--right"><Delete/></el-icon>
+            </el-button>
           </template>
         </el-table-column>
       </el-table>      
 <!-- 修改 -->
-      <el-dialog v-model="dialogFormVisible" title="修改信息" >
+      <el-dialog v-model="dialogFormVisible" title="修改信息" width="350px">
         <el-form :model="dialogForm" :rules="dialogRules">
           <el-form-item label="编码" prop="materialCode">
-            <el-input v-model="dialogForm.materialCode"></el-input>
+            <el-input v-model="dialogForm.materialCode"  style="width:200px;" placeholder="请输入产品编码"></el-input>
           </el-form-item>
           <el-form-item label="名称" prop="materialName">
-            <el-input v-model="dialogForm.materialName"></el-input>
+            <el-input v-model="dialogForm.materialName" style="width:200px;"  placeholder="请输入产品名称"></el-input>
           </el-form-item>
-          <el-form-item label="规格" prop="materialSpecification">
-            <el-input v-model="dialogForm.specification"></el-input>
+          <el-form-item label="规格" prop="specification">
+            <el-input v-model="dialogForm.specification" style="width:200px;" placeholder="请输入产品规格"></el-input>
           </el-form-item>
-          <el-form-item label="单位" prop="materialUnit">
-            <el-input v-model="dialogForm.unit"></el-input>
+          <el-form-item label="单位" prop="unit">
+            <el-select v-model="dialogForm.unit" class="m-2" placeholder="请选择单位">
+              <el-option
+                v-for="item in dialogForm.materialUnitOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
           </el-form-item>
-          <el-form-item label="单价" prop="materialPrice">
-            <el-input v-model="dialogForm.unitPrice"></el-input>
+          <el-form-item label="单价" prop="unitPrice">
+            <el-input v-model="dialogForm.unitPrice" style="width:100px;"></el-input>
           </el-form-item>
         </el-form>
 
@@ -64,10 +82,10 @@
           <el-form-item label="名称" prop="materialName">
             <el-input v-model="dialogAddForm.materialName" style="width:200px;"  placeholder="请输入产品名称"></el-input>
           </el-form-item>
-          <el-form-item label="规格" prop="materialSpecification">
+          <el-form-item label="规格" prop="specification">
             <el-input v-model="dialogAddForm.specification" style="width:200px;" placeholder="请输入产品规格"></el-input>
           </el-form-item>
-          <el-form-item label="单位" prop="materialUnit">
+          <el-form-item label="单位" prop="unit">
             <el-select v-model="dialogAddForm.unit" class="m-2" placeholder="请选择单位">
               <el-option
                 v-for="item in dialogAddForm.materialUnitOptions"
@@ -75,10 +93,10 @@
                 :label="item.label"
                 :value="item.value"
               />
-          </el-select>
+            </el-select>
             <!-- <el-input v-model="dialogAddForm.unit"></el-input> -->
           </el-form-item>
-          <el-form-item label="单价 (元)" prop="materialPrice" >
+          <el-form-item label="单价" prop="unitPrice" >
             <el-input v-model="dialogAddForm.unitPrice" style="width:100px;"></el-input>
           </el-form-item>
         </el-form>
@@ -133,16 +151,8 @@
 
     
      const dialogWidth = ref('30%');
-     const searchMaterial=()=>{
-      request.get(`/material/findByName/${searchInput.value}`,)
-      .then(
-        res=>{
-          materials.value=res.data.data
-      }
-      ).catch(
-        err => {
-          console.log(err)
-        })
+     const searchMaterial=()=>{ 
+        getAllMaterials()
      }
      const dialogForm=reactive({
       id:'',
@@ -151,13 +161,14 @@
       specification:'',
       unit:'',
       unitPrice:'',
+      materialUnitOptions: [{value: '千克',label: '千克 (kg)'},{value: '吨',label: '吨 (T)'}]
      })
 
      const dialogAddForm=reactive({
       materialCode:'',
       materialName:'',
       specification:'',
-      unit:'',
+      unit:{value: '千克',label: '千克 (kg)'},
       unitPrice:'',
       materialUnitOptions: [{value: '千克',label: '千克 (kg)'},{value: '吨',label: '吨 (T)'}]
      })
@@ -166,7 +177,11 @@
     
    
      const getAllMaterials=()=>{
-      request.get(`/material/pages/${pageinfo.pageNum}/${pageinfo.pageSize}`)
+      request.get(`/material/pages/${pageinfo.pageNum}/${pageinfo.pageSize}`,
+        {
+          params : {'name' : searchInput.value}
+        }
+      )
       .then(
         res=>{
         materials.value=res.data.data.list
@@ -191,43 +206,96 @@
     }
 
     const handleDelete=(index:number)=>{
-      ElMessageBox.confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+      ElMessageBox.confirm('确认删除该原材料?', '删除', {
                 confirmButtonText: '确定',
                 cancelButtonText: '取消',
                 type: 'warning'
           }).then(() => {
             //这里写删除请求
-            request.delete(`/material/remove/${index}`,).then(res=>{console.log(res)}).catch(err=>{console.log(err)})
-            getAllMaterials()
-            ElMessage.success({
-              message: '删除成功!'
-            });
-          }).catch(() => {
-            ElMessage.info({
-              message: '已取消删除'
-            });
+            request.delete(`/material/remove/${index}`,)
+            .then(
+                res => {
+                    if(res.data.code == 0){
+                      ElMessage.success({
+                        message: res.data.message
+                      });
+                    }else{
+                      ElMessage.error({
+                        message: res.data.message
+                      });
+                    }
+                    getAllMaterials()               
+                }
+              )
+            .catch(
+                err=>{ 
+                  console.log(err) 
+                }
+              )
+          }).catch((err) => {
+              console.log(err);
+              
           });
     }
 
-    
     const dialogFormSubmit=()=>{
-      request.post(`/material/update`,dialogForm).then(res=>{console.log(res)}).catch(err=>{console.log(err)})
-      dialogFormVisible.value=false
-      getAllMaterials();
+      request.post(`/material/update`,dialogForm)
+      .then(
+        res=>{
+            if(res.data.code == 0){
+              ElMessage.success({
+                        message: res.data.message
+                      });
+              dialogFormVisible.value=false
+              getAllMaterials();
+            }else {
+              ElMessage.error({
+                        message: res.data.message
+                  });
+            }
+          }
+        )
+      .catch(
+         err => {
+             console.log(err)
+          } 
+        )
+
+    }
+
+    const clearAddDialong = () => {
+      dialogAddForm.materialCode = '',
+      dialogAddForm.materialName = '',
+      dialogAddForm.specification = '',
+      dialogAddForm.unit = {value: '千克',label: '千克 (kg)'},
+      dialogAddForm.unitPrice = '',
+      dialogAddForm.materialUnitOptions = [{value: '千克',label: '千克 (kg)'},{value: '吨',label: '吨 (T)'}]
     }
 
     const dialogFormAddSubmit=()=>{
       request.post(`/material/save`,dialogAddForm)
-      .then(
-        res=>{console.log(res)}
-        ).catch(
+      .then(res => {
+            if(res.data.code == 0){
+              ElMessage.success({
+                        message: res.data.message
+                      });
+              dialogFormAddVisible.value=false
+              clearAddDialong()
+              getAllMaterials();
+            }else{
+              ElMessage.error({
+                        message: res.data.message
+                      });
+            }
+        } 
+      ).catch(
           err => { console.log(err) }
-        )
-      dialogFormAddVisible.value=false
-      getAllMaterials();
+      )
+
     }
+    
     const handleAdd=()=>{
-      dialogFormAddVisible.value=true
+      dialogFormAddVisible.value = true
     }
     const tableRowClassName = ({
           rowIndex,
