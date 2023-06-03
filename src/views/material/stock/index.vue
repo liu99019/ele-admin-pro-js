@@ -1,15 +1,47 @@
 <template>
-    <div class="container">
-      <el-table :data="tableData" style="width: 100%">
-        <el-table-column prop="material" label="原材料名称"></el-table-column>
-        <el-table-column prop="inventory" label="库存数量"></el-table-column>
-      </el-table>
-    </div>
+  <div>
+    <el-table :data="stockData"  stripe style="width: 100%">
+      <el-table-column prop="concrete_type" label="混凝土型号" />
+      <el-table-column prop="in_stock_quantity" label="现有库存数量" />
+      <el-table-column prop="last_update_time" label="最后更新时间" />
+    </el-table>
+  </div>
 </template>
 
-<script setup lang="ts">
-import{ref,reactive} from 'vue';
-  const tableData=ref(
-    [{material:'原材料A',inventory:'10'},{material:'原材料B',inventory:'20'}]
-  )
+<script setup>
+import { ref, onMounted,reactive} from 'vue';
+import axios from 'axios';
+import ElementPlus from 'element-plus';
+import request from "@/utils/request";
+
+
+    // 使用 ref 创建响应式数据
+    const stockData = ref([]);
+
+    const pageTotal=ref(50)
+    const pageinfo=reactive({
+        pageSize:4,
+        pageNum:1
+      })
+
+    // 在组件挂载后立即请求数据
+    onMounted(() => {
+      //fetchStockData();
+    });
+
+    // 发送请求获取 m_stock 数据
+    const fetchStockData=()=> {
+      request.get('/api/stock/')
+        .then(response => {
+          stockData.value = response.data.data;
+        })
+        .catch(error => {
+          console.log(error);
+          ElementPlus.ElMessage.error('获取库存数据失败');
+        });
+    }
+
+
 </script>
+
+
