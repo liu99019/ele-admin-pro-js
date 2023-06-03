@@ -11,7 +11,7 @@
             placeholder="选择开始日期"
             :picker-options="pickerOptions"
           ></el-date-picker>
-          To
+          
           <el-date-picker
             v-model="end"
             type="date"
