@@ -11,10 +11,11 @@
           </template>
           </el-input>
        <!-- </el-col> -->
-       <el-button style="float: right;display: inline-block;margin-right: 120px;" type="primary" @click="handleAdd">新增物料</el-button>
+       <el-button style="display: inline-block;margin-left: 30px;" type="primary" @click="handleAdd">
+        新增物料<el-icon class="el-icon--right"><CirclePlus/></el-icon>
+      </el-button>
         </div>
-      <el-table :data="materials"  style="width: 100%;"
-        :row-class-name="tableRowClassName">
+      <el-table :data="materials"  style="width: 100%;">
         <el-table-column prop="materialCode" label="编码"></el-table-column>
         <el-table-column prop="materialName" label="名称"></el-table-column>
         <el-table-column prop="specification" label="规格"></el-table-column>
@@ -55,22 +56,30 @@
         </template>
       </el-dialog>
 <!-- 添加 -->
-      <el-dialog v-model="dialogFormAddVisible" title="添加物料信息" >
+      <el-dialog v-model="dialogFormAddVisible" title="添加物料信息" width="350px">
         <el-form :model="dialogAddForm" :rules="dialogRules">
           <el-form-item label="编码" prop="materialCode">
-            <el-input v-model="dialogAddForm.materialCode"></el-input>
+            <el-input v-model="dialogAddForm.materialCode" style="width:200px;" placeholder="请输入产品编码"></el-input>
           </el-form-item>
           <el-form-item label="名称" prop="materialName">
-            <el-input v-model="dialogAddForm.materialName"></el-input>
+            <el-input v-model="dialogAddForm.materialName" style="width:200px;"  placeholder="请输入产品名称"></el-input>
           </el-form-item>
           <el-form-item label="规格" prop="materialSpecification">
-            <el-input v-model="dialogAddForm.specification"></el-input>
+            <el-input v-model="dialogAddForm.specification" style="width:200px;" placeholder="请输入产品规格"></el-input>
           </el-form-item>
           <el-form-item label="单位" prop="materialUnit">
-            <el-input v-model="dialogAddForm.unit"></el-input>
+            <el-select v-model="dialogAddForm.unit" class="m-2" placeholder="请选择单位">
+              <el-option
+                v-for="item in dialogAddForm.materialUnitOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+          </el-select>
+            <!-- <el-input v-model="dialogAddForm.unit"></el-input> -->
           </el-form-item>
-          <el-form-item label="单价" prop="materialPrice">
-            <el-input v-model="dialogAddForm.unitPrice"></el-input>
+          <el-form-item label="单价 (元)" prop="materialPrice" >
+            <el-input v-model="dialogAddForm.unitPrice" style="width:100px;"></el-input>
           </el-form-item>
         </el-form>
 
@@ -83,7 +92,7 @@
       </el-dialog>
 
       <!-- 分页条 -->
-  <div class="example-pagination-block" style="width: 350px;margin: 30px auto;margin-top: 4px;" >
+  <div class="example-pagination-block" style="width: 350px;margin-left:550px;margin-top: 20px;" >
     <el-pagination layout="prev, pager, next" v-model:current-page="pageinfo.pageNum" :total="pageTotal" :page-size="pageinfo.pageSize" @current-change="handleCurrentChange()"/>
   </div>
 
@@ -99,6 +108,7 @@
     Message,
     Search,
     Star,
+    CirclePlus
     } from '@element-plus/icons-vue'
     import { load } from "@amap/amap-jsapi-loader";
     import { number } from "echarts/core";
@@ -113,7 +123,7 @@
      const searchInput = ref('')
 
      const pageinfo=reactive({
-      pageSize:4,
+      pageSize:10,
       pageNum:1
     })
 
@@ -149,13 +159,12 @@
       specification:'',
       unit:'',
       unitPrice:'',
+      materialUnitOptions: [{value: '千克',label: '千克 (kg)'},{value: '吨',label: '吨 (T)'}]
      })
      const dialogFormVisible=ref(false)
      const dialogFormAddVisible=ref(false)
-     onMounted(() => {
-      getAllMaterials();
-     });
-
+    
+   
      const getAllMaterials=()=>{
       request.get(`/material/pages/${pageinfo.pageNum}/${pageinfo.pageSize}`)
       .then(
@@ -168,7 +177,7 @@
           console.log(err)
         })
      }
-
+     getAllMaterials();
 
      const handleEdit=(param)=>{
       //将当前行的数据赋值给dialogForm
@@ -208,7 +217,12 @@
     }
 
     const dialogFormAddSubmit=()=>{
-      request.post(`/material/save`,dialogAddForm).then(res=>{console.log(res)}).catch(err=>{console.log(err)})
+      request.post(`/material/save`,dialogAddForm)
+      .then(
+        res=>{console.log(res)}
+        ).catch(
+          err => { console.log(err) }
+        )
       dialogFormAddVisible.value=false
       getAllMaterials();
     }
