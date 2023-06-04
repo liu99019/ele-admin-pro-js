@@ -117,7 +117,7 @@
   </template>
 
   <script setup lang="ts">
-    import {reactive,ref,onMounted} from "vue";
+    import {reactive,ref,onMounted,onActivated} from "vue";
     import request from "@/utils/request"
     import {
     Check,
@@ -174,7 +174,12 @@
      })
      const dialogFormVisible=ref(false)
      const dialogFormAddVisible=ref(false)
-    
+
+      onMounted(()=>{
+            console.log('onMounted');
+            getAllMaterials();
+      })
+      
    
      const getAllMaterials=()=>{
       request.get(`/material/pages/${pageinfo.pageNum}/${pageinfo.pageSize}`,
@@ -192,7 +197,7 @@
           console.log(err)
         })
      }
-     getAllMaterials();
+
 
      const handleEdit=(param)=>{
       //将当前行的数据赋值给dialogForm

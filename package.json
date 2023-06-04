@@ -28,6 +28,7 @@
     "github-markdown-css": "^5.1.0",
     "jsbarcode": "^3.11.5",
     "lodash-es": "^4.17.21",
+    "moment": "^2.29.4",
     "nprogress": "^0.2.0",
     "pinia": "^2.0.21",
     "sortablejs": "^1.15.0",
