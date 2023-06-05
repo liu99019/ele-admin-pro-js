@@ -116,6 +116,7 @@
     getShips();
     getStock();
   })
+  
   const showDialog = () => {
     dialogVisible.value = true
   }
