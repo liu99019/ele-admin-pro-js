@@ -35,23 +35,32 @@
   <el-table-column prop="shipmentOrderNo" label="出货单号"></el-table-column>
   <el-table-column prop="customer" label="客户"></el-table-column>
   <el-table-column prop="concreteType" label="混凝土型号"></el-table-column>
+  <el-table-column prop="state" label="订单状态">
+      <template #default="scope">
+        <el-tag v-if="scope.row.state == 0" class="ml-2" type="info">{{ getStateText(scope.row.state)}}</el-tag>
+        <el-tag v-if="scope.row.state == 1" class="ml-2" >{{ getStateText(scope.row.state)}}</el-tag>
+        <el-tag v-if="scope.row.state == 2" class="ml-2" >{{ getStateText(scope.row.state)}}</el-tag>
+        <el-tag v-if="scope.row.state == 3" class="ml-2" >{{ getStateText(scope.row.state)}}</el-tag>
+        <el-tag v-if="scope.row.state == 4" class="ml-2" type="danger">{{ getStateText(scope.row.state)}}</el-tag>
+        <el-tag v-if="scope.row.state == 5" class="ml-2" type="success">{{ getStateText(scope.row.state)}}</el-tag>
+      </template>
+  </el-table-column>
   <el-table-column prop="quantity" label="数量"></el-table-column>
   <el-table-column prop="price" label="单价"></el-table-column>
   <el-table-column prop="totalPrice" label="总价"></el-table-column>
   <el-table-column label="操作">
   <template #default="{row}">
-  <el-button type="text" @click="handleEdit(row)">编辑</el-button>
   <el-button type="text" @click="handleDelete(row)">删除</el-button>
   </template>
   </el-table-column>
   </el-table>
   <!------------------------ 新增出货单 ---------------------------->
-  <el-dialog v-model="dialogVisible" title="新增出货单">
-    <el-form :model="form">
-      <el-form-item label="客户名" :label-width="formLabelWidth">
+  <el-dialog v-model="dialogVisible" title="新增出货单" width="480px">
+    <el-form :model="form" :rules="dialogRules">
+      <el-form-item label="客户名" prop="customer" :label-width="formLabelWidth">
         <el-input v-model="form.customer" autocomplete="off" />
       </el-form-item>
-      <el-form-item label="混凝土型号" :label-width="formLabelWidth">
+      <el-form-item label="混凝土型号" prop="concreteType" :label-width="formLabelWidth">
         <el-select v-model="form.concreteType" placeholder="请选择混凝土型号">
           <el-option
             v-for="item in stocks"
@@ -61,10 +70,10 @@
             />
          </el-select>
       </el-form-item>
-      <el-form-item label="数量" :label-width="formLabelWidth">
+      <el-form-item label="数量" prop="quantity" :label-width="formLabelWidth">
         <el-input placeholder="" v-model="form.quantity" autocomplete="off" />
       </el-form-item>
-      <el-form-item label="价格" :label-width="formLabelWidth">
+      <el-form-item label="价格" prop="price" :label-width="formLabelWidth">
         <el-input v-model="form.price" autocomplete="off" />
       </el-form-item>
     </el-form>
@@ -88,7 +97,7 @@
   <script setup>
   import { ref,reactive,onMounted} from 'vue'
   import { ElMessage, ElMessageBox} from 'element-plus'
-  import {Search} from '@element-plus/icons-vue'
+  import {MessageBox, Search} from '@element-plus/icons-vue'
   import request from "@/utils/request"
   const tableData = ref([])
   const dialogVisible = ref(false)
@@ -100,20 +109,38 @@
       pageNum:1
     })
 
-  const form = ref({
-  })
+  
+  const shipsOrderParam = {
+      startDate:null,
+      endDate:null,
+      concreteType: null
+    }
+  const form = ref(
+    {
+  "concreteType": "",
+  "customer": "",
+  "id": '',
+  "price": '',
+  "quantity": '',
+  "shipmentDate": "",
+  "shipmentOrderNo": "",
+  "totalPrice": ''
+}
+  )
   
   onMounted(()=>{
-    getShips();
+    getShips(shipsOrderParam);
     getStock();
   })
   
   const showDialog = () => {
     dialogVisible.value = true
   }
+
   
-  const getShips=()=>{
-    request.get(`/ship/pages/${pageinfo.pageNum}/${pageinfo.pageSize}`)
+  const getShips=(shipsOrderParam)=>{
+
+    request.post(`/ship/getShips/${pageinfo.pageNum}/${pageinfo.pageSize}`,shipsOrderParam)
       .then(
         res=>{
           tableData.value=res.data.data.list
@@ -126,11 +153,10 @@
   }
 
   const getStock=()=>{
-    request.get(`/ship/pages/${pageinfo.pageNum}/${pageinfo.pageSize}`)
+    request.get(`/stock/getAll`)
       .then(
         res=>{
-          tableData.value=res.data.data.list
-          pageTotal.value= res.data.data.count
+            stocks.value=res.data.data
       }
       ).catch(
         err => {
@@ -139,56 +165,58 @@
   }
 
   const handleCurrentChange=()=>{
-    getShips();
+    getShips(shipsOrderParam);
   }
-  const handleEdit = (row) => {
-    dialogVisible.value = true
-    Object.assign(form.value, row)
-  }
-  
+
   const handleDelete = (row) => {
     ElMessageBox.confirm('确认删除该行数据吗?', '提示', { type: 'warning' }).then(() => {
-      const index = tableData.indexOf(row)
-      tableData.splice(index, 1)
-      ElMessage.success('删除成功！')
-    })
-  }
-  const formSubmit = () => {
-    ref.form.validate((valid) => {
-      if (valid) {
-        if (form.value.hasOwnProperty('id')) {
-          const index = tableData.value.findIndex((item) => item.id === form.id)
-          tableData.splice(index, 1, Object.assign({}, form.value))
-          ElMessage.success('编辑成功！')
-        } else {
-          const id = tableData.value.length + 1
-          tableData.push(Object.assign({}, form.value, { id }))
-          ElMessage.success('新增成功！')
+      request.delete(`/ship/deleteByID/${row.id}`).then(res=>{
+        if(res.data.code==0){
+          ElMessage.success('删除成功！')
+        }else{
+          ElMessage.error('删除失败！')
         }
-        dialogVisible.value = false
-      }
+      })
+    }).catch(err=>{
+      console.log(err)
     })
   }
 
-  const search = () => {
-      const startDate = formatDate(start.value);
-      const endDate = formatDate(end.value);
-      request.get(`/stock/search?startDate=${startDate}&endDate=${endDate}&concreteType=${stock.value}`)
-        .then((response) => {
-          tableData.value = response.data.data;
-          stock.value
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    };
 
- 
-    const formatDate = (date) => {
-      const YYYY = date.getFullYear();
-      const MM = String(date.getMonth() + 1).padStart(2, '0');
-      const DD = String(date.getDate()).padStart(2, '0');
-      return `${YYYY}-${MM}-${DD}`;
+  const formSubmit = () => {{
+    request.post(`ship/save`,form.value).then(res=>{
+      if(res.data.code=0){
+        ElMessage.success('保存成功！')
+        dialogVisible.value=false
+      }
+      else{
+        ElMessage.error({
+                        message: res.data.message
+                  });
+      }
+      clearnForm()
+    }).catch(rsp=>{
+      console(rsp)
+    })    
+  }}
+
+  const clearnForm=()=>{
+    form.value={
+  "concreteType": "",
+  "customer": "",
+  "id": '',
+  "price": '',
+  "quantity": '',
+  "shipmentDate": "",
+  "shipmentOrderNo": "",
+  "totalPrice": ''
+}
+  }
+  const search = () => {
+        shipsOrderParam.startDate = start.value;
+        shipsOrderParam.endDate = end.value;
+        shipsOrderParam.concreteType=stock.value ;
+        getShips(shipsOrderParam);
     };
 
     const start = ref('');
@@ -225,6 +253,35 @@
         },
       ],
     };
+
+    
+    const dialogRules=reactive(
+      { customer: [{ required: true, message: '请填写客户名称', trigger: 'blur' }],
+        concreteType: [{ required: true, message: '请选择混凝土型号', trigger: 'blur' }],
+        quantity: [{ required: true, message: '请填写数量', trigger: 'blur' }],
+        price: [{ required: true, message: '请填写单价', trigger: 'blur' }]}
+     )
+
+
+     const getStateText=(state)=>{
+      switch (state) {
+          case 0:
+            return '未出货';
+          case 1:
+            return '运输中';
+          case 2:
+            return '客户已确认数量';
+          case 3:
+            return '客户确认收货';
+          case 4:
+            return '出货订单取消'
+          case 5:
+            return '出货订单完成'
+          default:
+            return '';
+        }
+    }
+
   
   </script>
 

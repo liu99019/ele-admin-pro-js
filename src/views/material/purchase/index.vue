@@ -444,7 +444,6 @@
     const purchaseOrderSearchParams = {
       startDate:null,
       endDate:null,
-      state: null,
       supplierCode: null
     }
 

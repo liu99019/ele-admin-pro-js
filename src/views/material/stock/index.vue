@@ -1,9 +1,9 @@
 <template>
   <div>
     <el-table :data="stockData"  stripe style="width: 100%">
-      <el-table-column prop="concrete_type" label="混凝土型号" />
-      <el-table-column prop="in_stock_quantity" label="现有库存数量" />
-      <el-table-column prop="last_update_time" label="最后更新时间" />
+      <el-table-column prop="concreteType" label="混凝土型号" />
+      <el-table-column prop="stockQuantity" label="现有库存数量" />
+      <el-table-column prop="lastUpdateTime" label="最后更新时间" />
     </el-table>
   </div>
 </template>
@@ -26,17 +26,18 @@ import request from "@/utils/request";
 
     // 在组件挂载后立即请求数据
     onMounted(() => {
-      //fetchStockData();
+      getStockData();
     });
 
     // 发送请求获取 m_stock 数据
-    const fetchStockData=()=> {
-      request.get('/api/stock/')
-        .then(response => {
-          stockData.value = response.data.data;
+    const getStockData=()=> {
+      request.get(`stock/pages/${pageinfo.pageNum}/${pageinfo.pageSize}`)
+        .then(res => {
+          console.log(res)
+          stockData.value=res.data.data.list
+          pageTotal.value= res.data.data.count
         })
         .catch(error => {
-          console.log(error);
           ElementPlus.ElMessage.error('获取库存数据失败');
         });
     }
