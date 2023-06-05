@@ -35,6 +35,16 @@
   <el-table-column prop="shipmentOrderNo" label="出货单号"></el-table-column>
   <el-table-column prop="customer" label="客户"></el-table-column>
   <el-table-column prop="concreteType" label="混凝土型号"></el-table-column>
+  <el-table-column prop="state" label="订单状态">
+      <template #default="scope">
+        <el-tag v-if="scope.row.state == 0" class="ml-2" type="info">{{ getStateText(scope.row.state)}}</el-tag>
+        <el-tag v-if="scope.row.state == 1" class="ml-2" >{{ getStateText(scope.row.state)}}</el-tag>
+        <el-tag v-if="scope.row.state == 2" class="ml-2" >{{ getStateText(scope.row.state)}}</el-tag>
+        <el-tag v-if="scope.row.state == 3" class="ml-2" >{{ getStateText(scope.row.state)}}</el-tag>
+        <el-tag v-if="scope.row.state == 4" class="ml-2" type="danger">{{ getStateText(scope.row.state)}}</el-tag>
+        <el-tag v-if="scope.row.state == 5" class="ml-2" type="success">{{ getStateText(scope.row.state)}}</el-tag>
+      </template>
+  </el-table-column>
   <el-table-column prop="quantity" label="数量"></el-table-column>
   <el-table-column prop="price" label="单价"></el-table-column>
   <el-table-column prop="totalPrice" label="总价"></el-table-column>
@@ -99,6 +109,12 @@
       pageNum:1
     })
 
+  
+  const shipsOrderParam = {
+      startDate:null,
+      endDate:null,
+      concreteType: null
+    }
   const form = ref(
     {
   "concreteType": "",
@@ -113,16 +129,18 @@
   )
   
   onMounted(()=>{
-    getShips();
+    getShips(shipsOrderParam);
     getStock();
   })
   
   const showDialog = () => {
     dialogVisible.value = true
   }
+
   
-  const getShips=()=>{
-    request.get(`/ship/pages/${pageinfo.pageNum}/${pageinfo.pageSize}`)
+  const getShips=(shipsOrderParam)=>{
+
+    request.post(`/ship/getShips/${pageinfo.pageNum}/${pageinfo.pageSize}`,shipsOrderParam)
       .then(
         res=>{
           tableData.value=res.data.data.list
@@ -147,7 +165,7 @@
   }
 
   const handleCurrentChange=()=>{
-    getShips();
+    getShips(shipsOrderParam);
   }
 
   const handleDelete = (row) => {
@@ -195,31 +213,10 @@
 }
   }
   const search = () => {
-      const startDate = formatDate(start.value);
-      const endDate = formatDate(end.value);
-      request.get(`/ship/search?startDate=${startDate}&endDate=${endDate}&concreteType=${stock.value}`)
-        .then((response) => {
-          console.log(response.data.code)
-          if(response.data.code==0){
-            tableData.value = response.data.data;
-            ElMessage.success("查找成功")
-            console.log(response.data.data)
-            
-          }else{
-            ElMessage.error("查找失败")
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-
- 
-    const formatDate = (date) => {
-      const YYYY = date.getFullYear();
-      const MM = String(date.getMonth() + 1).padStart(2, '0');
-      const DD = String(date.getDate()).padStart(2, '0');
-      return `${YYYY}-${MM}-${DD}`;
+        shipsOrderParam.startDate = start.value;
+        shipsOrderParam.endDate = end.value;
+        shipsOrderParam.concreteType=stock.value ;
+        getShips(shipsOrderParam);
     };
 
     const start = ref('');
@@ -264,6 +261,27 @@
         quantity: [{ required: true, message: '请填写数量', trigger: 'blur' }],
         price: [{ required: true, message: '请填写单价', trigger: 'blur' }]}
      )
+
+
+     const getStateText=(state)=>{
+      switch (state) {
+          case 0:
+            return '未出货';
+          case 1:
+            return '运输中';
+          case 2:
+            return '客户已确认数量';
+          case 3:
+            return '客户确认收货';
+          case 4:
+            return '出货订单取消'
+          case 5:
+            return '出货订单完成'
+          default:
+            return '';
+        }
+    }
+
   
   </script>
 
