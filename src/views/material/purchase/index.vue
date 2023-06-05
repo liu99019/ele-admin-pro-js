@@ -53,7 +53,7 @@
         </el-table-column>
         <el-table-column label="操作">
           <template #default="{row}">
-            <el-button type="text" @click="handleEdit(row)">订单详情</el-button>
+            <el-button type="text" @click="orderDetails(row)">订单详情</el-button>
             <el-button type="text" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -345,7 +345,15 @@
       }
     };
 
-    const handleEdit = (row) => {
+    const activities = ref([])
+    const orderDetails = (row) => {
+        activities.value = []
+        request.get(`/operateRecord/list/${row.purchaseOrderNo}`)
+        .then(res => {
+           if(res.data.code == 0) {
+              activities.value = res.data.data
+           }
+        })
         request.get(`/orderItem/getOrderItems/${row.orderItemCode}`,).then(res=>{  
                   ODitems.value= res.data.data
                   orderItemVisible.value=true
@@ -356,12 +364,18 @@
 
     // 点击删除按钮
     const handleDelete = (row) => {
-      ElMessageBox.confirm('确认删除该供应商吗?', '提示', {
+      ElMessageBox.confirm('确认删除该订单吗?', '提示', {
         type: 'warning',
+        confirmButtonText: '确定',
+       cancelButtonText: '取消',
       }).then(() => {
-        request.delete(`purchase/removeByNo/${row.purchaseOrderNo}`).then(() => {
-          ElMessage.success('删除成功');
-          getPurchaseList();
+        request.delete(`purchase/removeByNo/${row.purchaseOrderNo}`).then((res) => {
+           if(res.data.code == 0) {
+              ElMessage.success(res.data.message);
+           }else {
+              ElMessage.error(res.data.message)
+           }
+            getPurchaseList(purchaseOrderSearchParams);
         });
       });
     };
@@ -476,42 +490,6 @@
       supplierValue.value = item.supplierCode
   }
 
-  const activities = [
-  {
-    content: '未发货',
-    timestamp: '2018-04-12 20:46',
-    type: 'primary',
-    // hollow: true,
 
-    // icon: MoreFilled,
-  },
-  {
-    content: '运输中',
-    timestamp: '2018-04-03 20:46',
-    // color: '#0bbd87',
-    type: 'primary',
-  },
-  {
-    content: '已确认收货数量',
-    timestamp: '2018-04-03 20:46',
-    type: 'primary',
-  },
-  {
-    content: '确认收货',
-    timestamp: '2018-04-03 20:46',
-    type: 'primary',
-    // hollow: true,
-    // type: 'primary',
-    type: 'info'
-
-  },
-  {
-    content: '订单完成',
-    timestamp: '2018-04-03 20:46',
-    // type: 'success',
-    type: 'info'
-
-  },
-]
 
 </script>
