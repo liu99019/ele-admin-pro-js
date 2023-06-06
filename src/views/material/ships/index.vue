@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-  <el-button type="primary" class="add-btn" @click="showDialog">新增</el-button>
+  <el-button type="primary" class="add-btn" @click="showDialog" style="margin-left: 10px;margin-top: 10px;margin-bottom: 10px;">新增</el-button>
   <!--------------------- 搜索 ------------------------------------>
   <div>
       <el-date-picker
@@ -33,7 +33,7 @@
   <el-table :data="tableData" style="width: 100%">
   <el-table-column prop="shipmentDate" label="出货日期"></el-table-column>
   <el-table-column prop="shipmentOrderNo" label="出货单号"></el-table-column>
-  <el-table-column prop="customer" label="客户"></el-table-column>
+  <el-table-column prop="customer" label="客户" width="80px"></el-table-column>
   <el-table-column prop="concreteType" label="混凝土型号"></el-table-column>
   <el-table-column prop="state" label="订单状态">
       <template #default="scope">
@@ -50,7 +50,9 @@
   <el-table-column prop="totalPrice" label="总价"></el-table-column>
   <el-table-column label="操作">
   <template #default="{row}">
-  <el-button type="text" @click="handleDelete(row)">删除</el-button>
+    <el-button type="text" @click="orderDetails(row)">订单详情</el-button>
+
+    <el-button type="text" @click="handleDelete(row)">删除</el-button>
   </template>
   </el-table-column>
   </el-table>
@@ -86,6 +88,32 @@
       </span>
     </template>
   </el-dialog>
+
+  <!------------------------ 订单详情页单 ---------------------------->
+  <el-dialog
+    v-model="orderDetailDialogVisible"
+    title="订单详情"
+    width="30%"
+    :before-close="handleClose"
+  >
+  <div style="display:inline-block;margin-right:20px;"> 
+          <el-timeline>
+          <el-timeline-item
+            v-for="(activity, index) in activities"
+            :key="index"
+            :icon="activity.icon"
+            :type="activity.type"
+            :color="activity.color"
+            :size="activity.size"
+            :hollow="activity.hollow"
+            :timestamp="activity.timestamp"
+          >
+            {{ activity.content }}
+          </el-timeline-item>
+        </el-timeline>
+        </div>
+  </el-dialog>
+  
   <!-------------------------分页条 -------------------------------->
   <div class="example-pagination-block" style="width: 350px;margin: 30px auto;margin-top: 4px;" >
     <el-pagination layout="prev, pager, next" v-model:current-page="pageinfo.pageNum" :total="pageTotal" :page-size="pageinfo.pageSize" @current-change="handleCurrentChange()"/>
@@ -97,15 +125,15 @@
   <script setup>
   import { ref,reactive,onMounted} from 'vue'
   import { ElMessage, ElMessageBox} from 'element-plus'
-  import {MessageBox, Search} from '@element-plus/icons-vue'
   import request from "@/utils/request"
   const tableData = ref([])
   const dialogVisible = ref(false)
+  const orderDetailDialogVisible = ref(false)
   const stocks = ref([])
   const stock = ref()
   const pageTotal=ref(50)
   const pageinfo=reactive({
-      pageSize:4,
+      pageSize:7,
       pageNum:1
     })
 
@@ -219,6 +247,18 @@
         getShips(shipsOrderParam);
     };
 
+    const activities = ref([])
+    const orderDetails = (row) => {
+        activities.value = []
+        request.get(`/operateRecord/list/${row.shipmentOrderNo}`)
+        .then(res => {
+           if(res.data.code == 0) {
+              activities.value = res.data.data
+           }
+           orderDetailDialogVisible.value=true
+           
+        })
+    };
     const start = ref('');
     const end = ref('');
 
