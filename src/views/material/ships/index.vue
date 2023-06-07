@@ -19,7 +19,7 @@
       :picker-options="pickerOptions"
     ></el-date-picker>
 
-    <el-select v-model="stock" style="margin-left: 10px;" placeholder="混凝土型号">
+    <el-select v-model="stock" style="margin-left: 10px;" clearable placeholder="混凝土型号">
       <el-option
       v-for="item in stocks"
       :key="item.id"
@@ -171,8 +171,13 @@
     request.post(`/ship/getShips/${pageinfo.pageNum}/${pageinfo.pageSize}`,shipsOrderParam)
       .then(
         res=>{
-          tableData.value=res.data.data.list
+          if(res.data.code==0){
+            tableData.value=res.data.data.list
           pageTotal.value= res.data.data.count
+          }else{
+            ElMessage.error(res.data.message)
+          }
+
       }
       ).catch(
         err => {
@@ -201,6 +206,7 @@
       request.delete(`/ship/deleteByID/${row.id}`).then(res=>{
         if(res.data.code==0){
           ElMessage.success('删除成功！')
+          getShips(shipsOrderParam)
         }else{
           ElMessage.error('删除失败！')
         }
